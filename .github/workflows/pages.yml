@@ -70,6 +70,8 @@ jobs:
             fi
           done
           echo '</ul></body></html>' >> public/index.html
+      - name: Generate CNAME file
+        run: echo "blender.ray34g.com" > public/CNAME
       - name: Deploy public directory to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
