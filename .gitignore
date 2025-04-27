@@ -1,0 +1,10 @@
+# Ignore extensions source clones
+extensions/
+
+# Ignore build artifacts
+public/
+
+# Other typical ignores (optional)
+blender/
+*.pyc
+__pycache__/
