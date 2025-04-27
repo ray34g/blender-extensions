@@ -1,6 +1,3 @@
-# Ignore extensions source clones
-extensions/
-
 # Ignore build artifacts
 public/
 
