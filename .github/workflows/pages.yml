@@ -83,7 +83,44 @@ jobs:
             fi
           done
           echo '</ul></body></html>' >> public/index.html
-
+          
+      - name: Generate extensions.json from blender_manifest.toml
+        run: |
+          mkdir -p public
+          echo '{ "extensions": [' > public/extensions.json
+          first=1
+          for dir in extensions/*; do
+            if [ -d "$dir" ]; then
+              manifest="$dir/blender_manifest.toml"
+              if [ -f "$manifest" ]; then
+                id=$(grep '^id =' "$manifest" | sed 's/id = "\(.*\)"/\1/')
+                version=$(grep '^version =' "$manifest" | sed 's/version = "\(.*\)"/\1/')
+                name=$(grep '^name =' "$manifest" | sed 's/name = "\(.*\)"/\1/')
+                tagline=$(grep '^tagline =' "$manifest" | sed 's/tagline = "\(.*\)"/\1/')
+                blender_version_min=$(grep '^blender_version_min =' "$manifest" | sed 's/blender_version_min = "\(.*\)"/\1/')
+                license=$(grep '^license =' "$manifest" | sed 's/license = \["\(.*\)"\]/\1/')
+      
+                if [ "$first" -eq 0 ]; then
+                  echo ',' >> public/extensions.json
+                fi
+                first=0
+      
+                echo '  {' >> public/extensions.json
+                echo "    \"id\": \"$id\"," >> public/extensions.json
+                echo "    \"version\": \"$version\"," >> public/extensions.json
+                echo "    \"type\": \"add-on\"," >> public/extensions.json
+                echo "    \"name\": \"$name\"," >> public/extensions.json
+                echo "    \"tagline\": \"$tagline\"," >> public/extensions.json
+                echo "    \"blender_version_min\": \"$blender_version_min\"," >> public/extensions.json
+                echo "    \"license\": [\"$license\"]," >> public/extensions.json
+                echo "    \"download_url\": \"https://blender.ray34g.com/extensions/$id/latest/${id}-latest.zip\"," >> public/extensions.json
+                echo "    \"repository\": \"/extensions.json\"" >> public/extensions.json
+                echo '  }' >> public/extensions.json
+              fi
+            fi
+          done
+          echo ']}' >> public/extensions.json
+        
       - name: Generate CNAME file
         run: echo "blender.ray34g.com" > public/CNAME
 
