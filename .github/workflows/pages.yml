@@ -55,6 +55,7 @@ jobs:
       - name: Organize built artifacts by ID and Version
         run: |
           mkdir -p public/extensions
+          mkdir -p public/extensions
           for zip in build_temp/*.zip; do
             filename=$(basename "$zip")
             name_version="${filename%.zip}"  # Remove Extension
@@ -71,18 +72,33 @@ jobs:
             # 署名ファイル
             sha256sum "public/extensions/$id/$version/${id}-${version}.zip" | awk '{print $1}' > "public/extensions/$id/$version/${id}-${version}.zip.sig"
             sha256sum "public/extensions/$id/latest/${id}-latest.zip" | awk '{print $1}' > "public/extensions/$id/latest/${id}-latest.zip.sig"
+      
+            mkdir -p "public/extensions/$id/$version"
+            mkdir -p "public/extensions/$id/latest"
+      
+            # zip配置
+            cp "$zip" "public/extensions/$id/$version/${id}-${version}.zip"
+            cp "$zip" "public/extensions/$id/latest/${id}-latest.zip"
+      
+            # 署名ファイル
+            sha256sum "public/extensions/$id/$version/${id}-${version}.zip" | awk '{print $1}' > "public/extensions/$id/$version/${id}-${version}.zip.sig"
+            sha256sum "public/extensions/$id/latest/${id}-latest.zip" | awk '{print $1}' > "public/extensions/$id/latest/${id}-latest.zip.sig"
           done
+
 
       - name: Generate index.html
         run: |
           echo '<html><body><h1>Blender Extensions Repository</h1><ul>' > public/index.html
           for ext in public/extensions/*; do
+          for ext in public/extensions/*; do
             if [ -d "$ext" ]; then
               extname=$(basename "$ext")
+              echo "<li><a href=\"./extensions/$extname/latest/\">$extname (latest)</a></li>" >> public/index.html
               echo "<li><a href=\"./extensions/$extname/latest/\">$extname (latest)</a></li>" >> public/index.html
             fi
           done
           echo '</ul></body></html>' >> public/index.html
+
 
       - name: Generate CNAME file
         run: echo "blender.ray34g.com" > public/CNAME
