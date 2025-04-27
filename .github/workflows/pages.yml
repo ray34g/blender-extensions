@@ -60,7 +60,16 @@ jobs:
             sha256sum "public/$id/$version/${id}-${version}.zip" | awk '{print $1}' > "public/$id/$version/${id}-${version}.zip.sig"
             sha256sum "public/$id/latest/${id}-latest.zip" | awk '{print $1}' > "public/$id/latest/${id}-latest.zip.sig"
           done
-
+      - name: Generate index.html
+        run: |
+          echo '<html><body><h1>Blender Extensions Repository</h1><ul>' > public/index.html
+          for ext in public/*; do
+            if [ -d "$ext" ]; then
+              extname=$(basename "$ext")
+              echo "<li><a href=\"./$extname/latest/\">$extname (latest)</a></li>" >> public/index.html
+            fi
+          done
+          echo '</ul></body></html>' >> public/index.html
       - name: Deploy public directory to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
