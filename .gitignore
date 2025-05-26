@@ -2,6 +2,5 @@
 public/
 
 # Other typical ignores (optional)
-blender/
 *.pyc
 __pycache__/

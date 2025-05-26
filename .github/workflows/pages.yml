@@ -1,10 +1,9 @@
-name: Build and Deploy Blender Extensions (organized by ID/version)
+name: Build and Deploy Blender Extensions
 
 on:
   # Runs on pushes targeting the default branch
   push:
     branches: ["main"]
-
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
 
@@ -22,7 +21,9 @@ concurrency:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: blender-extensions-arc-runner-set
+    container:
+      image: core.harbor.ray34g.com/library/blender:4.4.1
     steps:
       - name: Checkout repository (with submodules)
         uses: actions/checkout@v4
@@ -35,20 +36,16 @@ jobs:
           git submodule init
           git submodule update --remote --recursive
 
-      - name: Set up Blender Portable (Linux 4.4)
-        run: |
-          mkdir blender
-          curl -L https://mirror.freedif.org/blender/release/Blender4.4/blender-4.4.1-linux-x64.tar.xz | tar xJ -C blender --strip-components=1
+      - name: Prepare directories
+        run: mkdir -p public build_temp
 
-      - name: Create public directory
-        run: mkdir public
-
-      - name: Build each extension with Blender (extension build)
+      - name: Build each extension with Blender CLI
         run: |
-          mkdir -p build_temp
           for dir in extensions/*; do
             if [ -d "$dir" ]; then
-              ./blender/blender --background --command extension build --source-dir "$dir" --output-dir ./build_temp
+              blender --background --command extension build \
+                --source-dir "$dir" \
+                --output-dir ./build_temp
             fi
           done
 
@@ -73,54 +70,13 @@ jobs:
             sha256sum "public/extensions/$id/latest/${id}-latest.zip" | awk '{print $1}' > "public/extensions/$id/latest/${id}-latest.zip.sig"
           done
 
-      - name: Generate index.html
+      - name: Generate index.json & index.html
         run: |
-          echo '<html><body><h1>Blender Extensions Repository</h1><ul>' > public/index.html
-          for ext in public/extensions/*; do
-            if [ -d "$ext" ]; then
-              extname=$(basename "$ext")
-              echo "<li><a href=\"/extensions/$extname/latest/\">$extname (latest)</a></li>" >> public/index.html
-            fi
-          done
-          echo '</ul></body></html>' >> public/index.html
-          
-      - name: Generate extensions.json from blender_manifest.toml
-        run: |
-          mkdir -p public
-          echo '{ "extensions": [' > public/extensions.json
-          first=1
-          for dir in extensions/*; do
-            if [ -d "$dir" ]; then
-              manifest="$dir/blender_manifest.toml"
-              if [ -f "$manifest" ]; then
-                id=$(grep '^id =' "$manifest" | sed 's/id = "\(.*\)"/\1/')
-                version=$(grep '^version =' "$manifest" | sed 's/version = "\(.*\)"/\1/')
-                name=$(grep '^name =' "$manifest" | sed 's/name = "\(.*\)"/\1/')
-                tagline=$(grep '^tagline =' "$manifest" | sed 's/tagline = "\(.*\)"/\1/')
-                blender_version_min=$(grep '^blender_version_min =' "$manifest" | sed 's/blender_version_min = "\(.*\)"/\1/')
-                license=$(grep '^license =' "$manifest" | sed 's/license = \["\(.*\)"\]/\1/')
-      
-                if [ "$first" -eq 0 ]; then
-                  echo ',' >> public/extensions.json
-                fi
-                first=0
-      
-                echo '  {' >> public/extensions.json
-                echo "    \"id\": \"$id\"," >> public/extensions.json
-                echo "    \"version\": \"$version\"," >> public/extensions.json
-                echo "    \"type\": \"add-on\"," >> public/extensions.json
-                echo "    \"name\": \"$name\"," >> public/extensions.json
-                echo "    \"tagline\": \"$tagline\"," >> public/extensions.json
-                echo "    \"blender_version_min\": \"$blender_version_min\"," >> public/extensions.json
-                echo "    \"license\": [\"$license\"]," >> public/extensions.json
-                echo "    \"download_url\": \"https://blender.ray34g.com/extensions/$id/latest/${id}-latest.zip\"," >> public/extensions.json
-                echo "    \"repository\": \"/extensions.json\"" >> public/extensions.json
-                echo '  }' >> public/extensions.json
-              fi
-            fi
-          done
-          echo ']}' >> public/extensions.json
-        
+          blender --background \
+                  --command extension server-generate \
+                  --repo-dir ./public/extensions \
+                  --html
+              
       - name: Generate CNAME file
         run: echo "blender.ray34g.com" > public/CNAME
 
