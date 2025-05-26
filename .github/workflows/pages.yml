@@ -23,7 +23,7 @@ jobs:
   build:
     runs-on: blender-extensions-arc-runner-set
     container:
-      image: core.harbor.ray34g.com/library/blender:4.4.1
+      image: core.harbor.ray34g.com/library/blender:4.2.10
     steps:
       - name: Checkout repository (with submodules)
         uses: actions/checkout@v4
@@ -33,6 +33,7 @@ jobs:
 
       - name: Init and update submodules (pull latest from remote)
         run: |
+          git config --global --add safe.directory "${GITHUB_WORKSPACE}"
           git submodule init
           git submodule update --remote --recursive
 
