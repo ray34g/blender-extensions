@@ -63,10 +63,14 @@ jobs:
             mkdir -p "public/extensions/$id/latest"
       
             # zip配置
+            cp "$zip" "public/extensions/${id}.zip"
+
             cp "$zip" "public/extensions/$id/$version/${id}-${version}.zip"
             cp "$zip" "public/extensions/$id/latest/${id}-latest.zip"
       
             # 署名ファイル
+            sha256sum "public/extensions/${id}.zip" | awk '{print $1}' > "public/extensions/${id}.zip.sig"
+
             sha256sum "public/extensions/$id/$version/${id}-${version}.zip" | awk '{print $1}' > "public/extensions/$id/$version/${id}-${version}.zip.sig"
             sha256sum "public/extensions/$id/latest/${id}-latest.zip" | awk '{print $1}' > "public/extensions/$id/latest/${id}-latest.zip.sig"
           done
